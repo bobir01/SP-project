@@ -26,4 +26,10 @@ class Process(BaseModel):
 
 #class that will be generating the process list and managing the process #fixme add the process manager funct
 class ProcessManager:
-    pass
+    def __init__(self):
+        self.processes = []
+
+
+    def get_processes(self) -> List[Process]:
+        """"""
+        pass
