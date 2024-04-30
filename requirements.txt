@@ -1,1 +1,3 @@
+prettytable==3.10.0
 psutil==5.9.8
+wcwidth==0.2.13
