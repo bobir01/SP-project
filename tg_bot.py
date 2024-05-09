@@ -3,15 +3,18 @@ import ssl
 from typing import Dict
 import json
 
-# here we creating socket client for making HTTP request 
+
+# here we are creating socket client for making HTTP request
 class SocketClient:
     def __init__(self, host, port):
         self.host = host
         self.port = port
         # set up SSL context and wrap it
         self.sslContext = ssl_sock = ssl.create_default_context()
-        self.socket = self.sslContext.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM),server_hostname=self.host)
-    # preparing HTTP request. This function returns encoded request as byte 
+        self.socket = self.sslContext.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM),
+                                                  server_hostname=self.host)
+
+    # preparing HTTP request. This function returns encoded request as byte
     def prepare_request(self, body: Dict, path) -> bytes:
         path = path
         body_json = json.dumps(body)
@@ -31,9 +34,11 @@ class SocketClient:
             print('Socket error:', e)
         finally:
             self.close()
-    # recieves the HTTP respose from the server 
+
+    # recieves the HTTP respose from the server
     def receive_response(self, buffer_size=4096):
         return self.socket.recv(buffer_size)
+
     # closes socket connection
     def close(self):
         self.socket.close()
@@ -47,10 +52,12 @@ class TelegramSocketClient(SocketClient):
         self.path = f"/bot{bot_token}/sendMessage"
         self.bot_token = bot_token
         self.chat_id = chat_id
+
     # prepare request for specifically Telegram API
     def prepare_telegram_request(self, body):
         return self.prepare_request(body, self.path)
-    # in order to send message first we construct the message body after, 
+
+    # in order to send message first we construct the message body after,
     # prepare the request and send it using base class method 'send_request'
     def send_telegram_message(self, message):
         body = {
@@ -60,8 +67,10 @@ class TelegramSocketClient(SocketClient):
         request = self.prepare_telegram_request(body)
         self.send_request(request)
 
-# Usage
-token = "7155087790:AAEQIRoSeZ6CsXDb-ltJXCJHe44_ZBAKDZA"
-id = "881939669"
-telegram_client = TelegramSocketClient(token, id)
-telegram_client.send_telegram_message("Hello")
+
+if __name__ == '__main__':
+    # Usage
+    token = "7155087790:AAEQIRoSeZ6CsXDb-ltJXCJHe44_ZBAKDZA"
+    id = "881939669"
+    telegram_client = TelegramSocketClient(token, id)
+    telegram_client.send_telegram_message("Hello")
