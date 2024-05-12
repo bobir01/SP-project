@@ -93,8 +93,8 @@ class ProcessMonitoringGUI(object):
         self.process_data = self.pm.get_processes()
 
     def send_signal(self, event):
-        signal_name = event.
-
+        # signal_name = event.
+        pass
 
     def search_processes(self, event):
         """Based on the search entry, let's filter the process list."""
