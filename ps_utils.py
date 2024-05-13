@@ -43,6 +43,18 @@ class ProcessManager:
         proc = self.get_process_by_pid(pid)
         proc.nice(nice)
 
+    def kill_process(self, pid: int) -> None:
+        """Kill a process by PID.
+        :param pid: Process ID."""
+        proc = psutil.Process(pid)
+        proc.kill()
+
+    def send_signal(self, pid: int, signal: int) -> None:
+        """Send a signal to a process.
+        :param pid: Process ID.
+        :param signal: Signal to send."""
+        proc = psutil.Process(pid)
+        proc.send_signal(signal)
 
 if __name__ == '__main__':
     pm = ProcessManager()

@@ -71,6 +71,6 @@ class TelegramSocketClient(SocketClient):
 if __name__ == '__main__':
     # Usage
     token = "7155087790:AAEQIRoSeZ6CsXDb-ltJXCJHe44_ZBAKDZA"
-    id = "881939669"
+    id = "881939669" # muzaffar's ID
     telegram_client = TelegramSocketClient(token, id)
     telegram_client.send_telegram_message("Hello")

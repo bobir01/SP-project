@@ -2,6 +2,7 @@ import logging
 import signal
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 from ps_utils import ProcessManager
 from datetime import datetime
 from typing import List, Dict, Any
@@ -47,15 +48,15 @@ class ProcessMonitoringGUI(object):
         self.process_list = ttk.Treeview(self.list_frame, columns=self.raw_columns, show='headings', style='Treeview')
         self.process_list.bind('<<TreeviewSelect>>', self.update_selected)
 
-        self.signals = {'SIGINT': signal.SIGINT, 'SIGALRM': signal.SIGALRM,  'SIGHUP': signal.SIGHUP,
+        self.signals = {'SIGINT': signal.SIGINT, 'SIGALRM': signal.SIGALRM, 'SIGHUP': signal.SIGHUP,
                         'SIGTERM': signal.SIGTERM}
 
         for col in self.raw_columns:
             self.process_list.heading(col, text=col)
         self.process_list.pack(fill=tk.BOTH, expand=True)
         # signal buttons
-        self.signals = ['SIGINT', 'SIGALRM', 'SIGHUP', 'SIGTERM']
-        for sig in self.signals:
+        # self.signals = ['SIGINT', 'SIGALRM', 'SIGHUP', 'SIGTERM']
+        for sig in self.signals.keys():
             button = tk.Button(self.button_frame, text=sig)
             button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5, pady=5)
             button.bind("<Button-1>", self.send_signal)
@@ -93,8 +94,16 @@ class ProcessMonitoringGUI(object):
         self.process_data = self.pm.get_processes()
 
     def send_signal(self, event):
-        # signal_name = event.
-        pass
+        """general function to send a signal to a process."""
+        signal_name = event.widget.cget('text')
+        if self.selected_pid:
+            try:
+                self.logger.info(f"Sending signal {signal_name} to PID {self.selected_pid}")
+                self.pm.send_signal(int(self.selected_pid), self.signals[signal_name])
+                messagebox.showinfo("Signal Sent", f"Signal {signal_name} sent to PID {self.selected_pid}")
+            except Exception as e:
+                self.logger.error(f"Error sending signal {signal_name} to PID {self.selected_pid}: {e}")
+
 
     def search_processes(self, event):
         """Based on the search entry, let's filter the process list."""
@@ -133,10 +142,15 @@ class ProcessMonitoringGUI(object):
 
     # Function to update the currently selected process ID
     def update_selected(self, event):
-        selected_item = self.process_list.selection()[0]  # Assuming the PID is in the first column
-        self.logger.debug(f"Selected item: {selected_item}")
-        self.selected_pid = selected_item
+        self.logger.info("Updating selected process")
+        selected_item = self.process_list.selection()
+        if selected_item:
 
+            self.logger.info(f"Selected item: {selected_item}")
+            selected_item = selected_item[0] # Assuming the PID is in the first column
+            self.selected_pid = selected_item
+            return selected_item
+        self.logger.debug(f"Selected item: {selected_item}")
 
     def run(self):
         self.root.mainloop()
