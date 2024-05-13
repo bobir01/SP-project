@@ -1,13 +1,14 @@
+import io
 import logging
 import signal
+from pathlib import Path
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
-from ps_utils import ProcessManager
-from datetime import datetime
-from typing import List, Dict, Any
+from tkinter import PhotoImage
+from ps_utils import ProcessManager, SystemInformation
 from utils import uni2dt, format_float
-import re
+from tg_bot import TelegramSocketClient
 
 
 class ProcessMonitoringGUI(object):
@@ -15,11 +16,9 @@ class ProcessMonitoringGUI(object):
         self.process_data = None
         self.logger = logging.getLogger(__name__)
         self.root = _root
-        self.root.title("Process Monitor")
-        self.root.geometry("1200x800")
-        self.root.wm_minsize(800, 600)
-        self.style = ttk.Style(self.root)
+
         self.pm = ProcessManager()
+        self.style = ttk.Style(self.root)
         self.style.configure('TButton', font=('Helvetica', 12), background='black', foreground='white')
         self.style.configure('TEntry', font=('Helvetica', 12), background='black', foreground='white')
         self.style.configure('TLabel', font=('Helvetica', 12), background='black', foreground='white')
@@ -39,9 +38,20 @@ class ProcessMonitoringGUI(object):
         self.search_entry.bind('<KeyRelease>', self.search_processes)
         self.search_entry.pack(side=tk.LEFT, fill=tk.X, padx=20, pady=20)
         # refresh button
-        self.refresh_button = tk.Button(self.top_frame, text="Refresh")
+        self.refresh_button = tk.Button(self.top_frame, text="Refresh 🔄")
         self.refresh_button.pack(side=tk.RIGHT)
         self.refresh_button.bind("<Button-1>", self.refresh_processes)
+        # dump button
+        self.dump_button = tk.Button(self.top_frame, text="Dump ⬇️")
+        self.dump_button.pack(side=tk.RIGHT)
+        self.dump_button.bind("<Button-1>", self.dump_fnc)
+
+        # telegram button
+        self.telegram_button = tk.Button(self.top_frame, text="Telegram 📱")
+        self.telegram_button.pack(side=tk.RIGHT)
+        self.telegram_button.bind("<Button-1>", self.send_telegram_message)
+
+
         # process list
         self.raw_columns = ('Pid', 'Name', 'Status', 'CPU %', 'Memory %', 'Create Time')
         self.columns = self.pm.process_attributes[0:process_data_len]
@@ -50,12 +60,14 @@ class ProcessMonitoringGUI(object):
 
         self.signals = {'SIGINT': signal.SIGINT, 'SIGALRM': signal.SIGALRM, 'SIGHUP': signal.SIGHUP,
                         'SIGTERM': signal.SIGTERM}
+        self.signals_emoji = {'SIGINT': '🛑', 'SIGALRM': '⏰', 'SIGHUP': '🔄', 'SIGTERM': '🛑'}
+
+        self.base_dir = Path(__file__).parent.resolve()
 
         for col in self.raw_columns:
             self.process_list.heading(col, text=col)
         self.process_list.pack(fill=tk.BOTH, expand=True)
-        # signal buttons
-        # self.signals = ['SIGINT', 'SIGALRM', 'SIGHUP', 'SIGTERM']
+        # buttons declaration
         for sig in self.signals.keys():
             button = tk.Button(self.button_frame, text=sig)
             button.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5, pady=5)
@@ -87,7 +99,6 @@ class ProcessMonitoringGUI(object):
 
                 format_float(proc['memory_percent']),
                 uni2dt(proc['create_time']).strftime('%Y-%m-%d %H:%M:%S'),
-                # proc['exe'],  proc['nice'], proc['username']
             ), iid=proc['pid'])
 
     def refresh_pm(self):
@@ -99,11 +110,15 @@ class ProcessMonitoringGUI(object):
         if self.selected_pid:
             try:
                 self.logger.info(f"Sending signal {signal_name} to PID {self.selected_pid}")
-                self.pm.send_signal(int(self.selected_pid), self.signals[signal_name])
-                messagebox.showinfo("Signal Sent", f"Signal {signal_name} sent to PID {self.selected_pid}")
+                signal = self.signals[signal_name]
+                self.pm.send_signal(int(self.selected_pid), signal)
+                signal_emoji = self.signals_emoji.get(signal_name, '🚦')
+                messagebox.showinfo(
+                    f"Signal Sent {signal_emoji}",
+                    f"Signal {signal_name} {signal_emoji} sent to PID {self.selected_pid}")
             except Exception as e:
                 self.logger.error(f"Error sending signal {signal_name} to PID {self.selected_pid}: {e}")
-
+                messagebox.showerror("Error", f"Error sending signal {signal_name} to PID {self.selected_pid}")
 
     def search_processes(self, event):
         """Based on the search entry, let's filter the process list."""
@@ -145,9 +160,8 @@ class ProcessMonitoringGUI(object):
         self.logger.info("Updating selected process")
         selected_item = self.process_list.selection()
         if selected_item:
-
             self.logger.info(f"Selected item: {selected_item}")
-            selected_item = selected_item[0] # Assuming the PID is in the first column
+            selected_item = selected_item[0]  # Assuming the PID is in the first column
             self.selected_pid = selected_item
             return selected_item
         self.logger.debug(f"Selected item: {selected_item}")
@@ -155,9 +169,35 @@ class ProcessMonitoringGUI(object):
     def run(self):
         self.root.mainloop()
 
+    def set_aux(self):
+        icon = PhotoImage(file=self.base_dir / 'assets' / 'icon.png')
+        self.root.iconphoto(False, icon)
+        self.root.title("Process Monitor")
+        self.root.geometry("1200x800")
+        self.root.wm_minsize(800, 600)
+
+
+    def dump_fnc(self, event):
+        self.logger.info("Dumping process data")
+        with open(self.base_dir / 'assets' / 'processes.csv', 'w') as f:
+            f.write(','.join(self.pm.process_attributes) + '\n')
+            for proc in self.process_data:
+                f.write(','.join([str(proc.get(attr, '')) for attr in self.pm.process_attributes]) + '\n')
+        messagebox.showinfo("Dumped", "Process data dumped to processes.csv")
+        logging.info("Process data dumped to %sprocesses.csv", self.base_dir / 'assets/')
+
+    def send_telegram_message(self, event):
+        self.logger.info("Sending message to Telegram uses socket client")
+        tg = TelegramSocketClient('7155087790:AAEQIRoSeZ6CsXDb-ltJXCJHe44_ZBAKDZA', '881939669')
+        sys_info: io.StringIO = SystemInformation().collect_into_strIO()
+        tg.send_telegram_message(sys_info.getvalue())
+        messagebox.showinfo("Sent", "Message sent to Telegram to Boss 🫡 ;)")
+        logging.info("Message sent to Telegram")
+
 
 if __name__ == '__main__':
     root = tk.Tk()
     logging.basicConfig(level=logging.INFO)
     pmg = ProcessMonitoringGUI(root)
+    pmg.set_aux()
     pmg.run()
