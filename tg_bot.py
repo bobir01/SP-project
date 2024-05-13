@@ -1,3 +1,5 @@
+import logging
+import re
 import socket
 import ssl
 from typing import Dict
@@ -29,9 +31,26 @@ class SocketClient:
         try:
             self.socket.sendall(request)
             data = self.receive_response()
-            print('Received:', data.decode())
+            logging.info("Received data:", data.decode())
+            pattern = r'HTTP\/\d+\.\d+ (\d+)'
+            json_match = re.search(pattern, data.decode())
+
+            if json_match:
+                status_code = int(json_match.group(0).split(' ')[1])
+
+                if status_code == 200:
+                    return {'ok': True, 'description': 'Success', 'data': json.loads(data.decode().split('\r\n\r\n')[1])}
+                elif status_code == 400:
+                    return {'ok': False, 'description': 'Chat not found', 'data': json.loads(data.decode().split('\r\n\r\n')[1])}
+            else:
+                raise json.JSONDecodeError("No JSON data found in response", data.decode(), 0)
+
+
         except socket.error as e:
-            print('Socket error:', e)
+            return {'ok': False, 'description': 'Socket error', 'data': str(e)}
+
+        except json.JSONDecodeError as e:
+            return {'ok': False, 'description': 'JSON decode error', 'data': 'None'}
         finally:
             self.close()
 
@@ -59,18 +78,19 @@ class TelegramSocketClient(SocketClient):
 
     # in order to send message first we construct the message body after,
     # prepare the request and send it using base class method 'send_request'
-    def send_telegram_message(self, message:str):
+    def send_telegram_message(self, message: str):
         body = {
             'chat_id': self.chat_id,
             'text': message
         }
         request = self.prepare_telegram_request(body)
-        self.send_request(request)
+        return self.send_request(request)
 
 
 if __name__ == '__main__':
     # Usage
-    token = "7155087790:AAEQIRoSeZ6CsXDb-ltJXCJHe44_ZBAKDZA"
-    id = "881939669" # muzaffar's ID
-    telegram_client = TelegramSocketClient(token, id)
-    telegram_client.send_telegram_message("Hello")
+    # token = "7155087790:AAEQIRoSeZ6CsXDb-ltJXCJHe44_ZBAKDZA"
+    # id = "881939669"  # muzaffar's ID
+    # telegram_client = TelegramSocketClient(token, id)
+    # telegram_client.send_telegram_message("Hello")
+    pass

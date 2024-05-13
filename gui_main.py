@@ -9,7 +9,7 @@ root = tk.Tk()
 root.title("Processes")
 
 # Maximize the window size
-root.state("zoomed")
+# root.state("zoomed")
 
 # Create a frame for the search bar with padding
 search_frame = tk.Frame(root, padx=PADDING, pady=PADDING)
@@ -38,7 +38,7 @@ tree.grid(row=1, column=0, sticky="nsew")
 
 # Inserting some sample data into the Treeview
 for i in range(1, 11):
-    tree.insert("", tk.END, text=f"Item {i}", values=(f"Name {i}", f"{20+i}", f"{"Male" if i % 2 == 0 else "Female"}"))
+    tree.insert("", tk.END, text=f"Item {i}", values=(f"Name {i}", f"{20+i}", f'{"Male" if i % 2 == 0 else "Female"}'))
 
 # Pack the Treeview widget
 tree.pack(expand=True, fill="both")

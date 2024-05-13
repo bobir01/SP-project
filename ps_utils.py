@@ -10,7 +10,8 @@ class ProcessManager:
     def __init__(self):
         self.processes: List[Dict] = []
         self.process_attributes = ['pid', 'name', 'status', 'cpu_percent', 'memory_percent', 'create_time',
-                                   'exe', 'nice', 'username', 'num_threads', 'cmdline', ]
+                                   'nice', 'username', 'num_threads',
+                                   'exe',  'cmdline', ]
 
     def get_processes(self) -> List[Dict[str, Any]]:
         """Get list of all processes running on the system."""
@@ -112,24 +113,27 @@ class SystemInformation:
         print("\nNumber of Running Processes:", num_processes)
 
     def collect_into_strIO(self):
-        """collect all system info into a string buffer"""
+        """Collect all system info into a string buffer"""
         cpu_percent, cpu_count, cpu_freq = self.get_cpu_information()
         mem_total, mem_available, mem_used, mem_free, swap_total, swap_used, swap_free = self.get_memory_information()
         num_processes = self.get_num_processes()
         sio = io.StringIO()
-        sio.write("\nCPU Percent: " + cpu_percent + "\n")
-        sio.write("CPU Count: " + cpu_count + "\n")
-        sio.write("CPU Frequency: " + cpu_freq + "\n")
-        sio.write("\nMemory:\n")
-        sio.write("Total: " + mem_total + "\n")
-        sio.write("Available: " + mem_available + "\n")
-        sio.write("Used: " + mem_used + "\n")
-        sio.write("Free: " + mem_free + "\n")
-        sio.write("\nSwap Memory:\n")
-        sio.write("Total: " + swap_total + "\n")
-        sio.write("Used: " + swap_used + "\n")
-        sio.write("Free: " + swap_free + "\n")
-        sio.write("\nNumber of Running Processes: " + num_processes + "\n")
+
+        # Use emojis to make the output more interactive and visually appealing
+        sio.write("\n🔧 CPU Percent: " + str(cpu_percent) + "%\n")
+        sio.write("🧮 CPU Count: " + str(cpu_count) + "\n")
+        sio.write("⚙️ CPU Frequency: " + str(cpu_freq) + " MHz\n")
+        sio.write("\n💾 Memory:\n")
+        sio.write("📊 Total: " + str(mem_total) + " MB\n")
+        sio.write("🟢 Available: " + str(mem_available) + " MB\n")
+        sio.write("🔴 Used: " + str(mem_used) + " MB\n")
+        sio.write("🟢 Free: " + str(mem_free) + " MB\n")
+        sio.write("\n🔄 Swap Memory:\n")
+        sio.write("📊 Total: " + str(swap_total) + " MB\n")
+        sio.write("🔴 Used: " + str(swap_used) + " MB\n")
+        sio.write("🟢 Free: " + str(swap_free) + " MB\n")
+        sio.write("\n🚦 Number of Running Processes: " + str(num_processes) + "\n")
+
         return sio
 
 
