@@ -31,7 +31,7 @@ class SocketClient:
         try:
             self.socket.sendall(request)
             data = self.receive_response()
-            logging.info("Received data:", data.decode())
+            logging.info("Received data: %s" % data.decode())
             pattern = r'HTTP\/\d+\.\d+ (\d+)'
             json_match = re.search(pattern, data.decode())
 
