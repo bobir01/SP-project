@@ -59,7 +59,7 @@ class TelegramSocketClient(SocketClient):
 
     # in order to send message first we construct the message body after,
     # prepare the request and send it using base class method 'send_request'
-    def send_telegram_message(self, message):
+    def send_telegram_message(self, message:str):
         body = {
             'chat_id': self.chat_id,
             'text': message
